@@ -9,12 +9,12 @@ import (
 )
 
 type LoadBalancer interface {
-	ServeHTTP(http.ResponseWriter, *http.Request)
+	GenerateLBServeHTTP() func(http.ResponseWriter, *http.Request)
 }
 
 /* Abstract LoadBalancer type */
-type AbstractLoadBalancer struct {
-	// Name of the load balancer
+type abstractLoadBalancer struct {
+	// Name of the load balancer (for logs)
 	Name   string
 	URL    *url.URL
 	Server *http.Server
@@ -23,25 +23,26 @@ type AbstractLoadBalancer struct {
 	Mapping map[*url.URL]*backend.Backend
 }
 
-func (lb *AbstractLoadBalancer) InsertBackend(serverURL string) error {
+func (lb *abstractLoadBalancer) InsertBackend(serverURL string) error {
 	bknd, err := backend.New(serverURL)
 	if err != nil {
 		return err
 	}
 
 	lb.Mapping[bknd.URL] = bknd
-	log.Printf("Inserted backend for %s into %s", bknd.URL.String(), lb.Name)
+	log.Printf("Inserted backend on %s into %s", bknd.URL.String(), lb.Name)
 	return nil
 }
 
-func (lb *AbstractLoadBalancer) InitLoadBalancer() {
+func (lb *abstractLoadBalancer) InitLoadBalancer() {
 	// Init the backends within the lb.Mapping
-	bknds := make([]*backend.Backend, len(lb.Mapping))
+	bknds := []*backend.Backend{}
 	for _, bknd := range lb.Mapping {
 		bknds = append(bknds, bknd)
 	}
 	backend.InitBackends(bknds)
 
 	// Start the LoadBalancer itself
+	log.Printf("Load balancer named '%s' is listening on %s", lb.Name, lb.URL.Host)
 	lb.Server.ListenAndServe()
 }

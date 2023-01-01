@@ -31,7 +31,7 @@ func New(serverUrl string) (*Backend, error) {
 func InitBackends(backends []*Backend) {
 	for _, bknd := range backends {
 		server := bknd.Server
-		log.Print("Starting server on ", bknd.URL.String())
+		log.Print("Starting backend on ", bknd.URL.String())
 		go server.ListenAndServe()
 		updateBackendStatus(bknd, Alive)
 	}
