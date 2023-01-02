@@ -21,7 +21,7 @@ func New(serverUrl string) (*Backend, error) {
 			Addr:    targetURL.Host,
 			Handler: http.HandlerFunc(generateBackendHandler(targetURL)),
 		},
-		Status:       Stale,
+		Status:       Initial,
 		ReverseProxy: httputil.NewSingleHostReverseProxy(targetURL),
 	}
 
@@ -33,8 +33,12 @@ func InitBackends(backends []*Backend) {
 		server := bknd.Server
 		log.Print("Starting backend on ", bknd.URL.String())
 		go server.ListenAndServe()
-		updateBackendStatus(bknd, Alive)
+		updateBackendStatus(bknd, Healthy)
 	}
+}
+
+func (bknd *Backend) IsHealthy() bool {
+	return bknd.Status.String() == "Healthy"
 }
 
 func updateBackendStatus(backend *Backend, newStatus Status) {

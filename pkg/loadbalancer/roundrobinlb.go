@@ -9,8 +9,10 @@ import (
 )
 
 type RoundRobinLoadBalancer struct {
-	abstractLoadBalancer
-	index int
+	*abstractLoadBalancer
+	// Maintain a consistent order of server URL.String()'s
+	ServerURLs []string
+	index      int
 }
 
 func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBalancer, error) {
@@ -21,7 +23,8 @@ func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBa
 
 	lb := RoundRobinLoadBalancer{
 		index:                0,
-		abstractLoadBalancer: abstractLoadBalancer{},
+		ServerURLs:           []string{},
+		abstractLoadBalancer: nil,
 	}
 
 	abstractLB := abstractLoadBalancer{
@@ -31,11 +34,11 @@ func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBa
 			Addr:    targetURL.Host,
 			Handler: http.HandlerFunc(lb.GenerateLBServeHTTP()),
 		},
-		Mapping: make(map[*url.URL]*backend.Backend),
+		Mapping: make(map[string]*backend.Backend),
 	}
 
 	// Set the abstractLB after we GenerateLBServeHTTP
-	lb.abstractLoadBalancer = abstractLB
+	lb.abstractLoadBalancer = &abstractLB
 
 	return &lb, nil
 }
@@ -47,15 +50,32 @@ func (lb *RoundRobinLoadBalancer) GenerateLBServeHTTP() func(http.ResponseWriter
 			return
 		}
 
-		serverURLs := []*url.URL{}
-		for url := range lb.Mapping {
-			serverURLs = append(serverURLs, url)
+		wrapAroundIndex := lb.index + len(lb.ServerURLs)
+		for ; lb.index < wrapAroundIndex; lb.index++ {
+			proxyServerURL := lb.ServerURLs[lb.index%len(lb.Mapping)]
+			bknd := lb.Mapping[proxyServerURL]
+
+			if bknd.IsHealthy() {
+				bknd.ReverseProxy.ServeHTTP(rw, req)
+				lb.index++
+				return
+			}
 		}
-
-		proxyServerURL := serverURLs[lb.index%len(lb.Mapping)]
-		bknd := lb.Mapping[proxyServerURL]
-		bknd.ReverseProxy.ServeHTTP(rw, req)
-
-		lb.index++
+		io.WriteString(rw, "There are no healthy backends available to process your request!")
 	}
+}
+
+func (lb *RoundRobinLoadBalancer) InsertBackend(serverURL string) error {
+	err := lb.abstractLoadBalancer.InsertBackend(serverURL)
+	if err != nil {
+		return err
+	}
+
+	targetURL, err := url.Parse(serverURL)
+	if err != nil {
+		return err
+	}
+
+	lb.ServerURLs = append(lb.ServerURLs, targetURL.String())
+	return nil
 }

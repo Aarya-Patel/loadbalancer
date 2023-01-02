@@ -12,9 +12,9 @@ type Status uint8
 
 /* Enums */
 const (
-	Stale Status = iota
-	Alive
-	Dead
+	Initial Status = iota
+	Healthy
+	Unhealthy
 )
 
 type Backend struct {

@@ -19,8 +19,8 @@ type abstractLoadBalancer struct {
 	URL    *url.URL
 	Server *http.Server
 
-	// Mapping between URL -> Backend
-	Mapping map[*url.URL]*backend.Backend
+	// Mapping between URL.String() -> Backend
+	Mapping map[string]*backend.Backend
 }
 
 func (lb *abstractLoadBalancer) InsertBackend(serverURL string) error {
@@ -29,7 +29,7 @@ func (lb *abstractLoadBalancer) InsertBackend(serverURL string) error {
 		return err
 	}
 
-	lb.Mapping[bknd.URL] = bknd
+	lb.Mapping[bknd.URL.String()] = bknd
 	log.Printf("Inserted backend on %s into %s", bknd.URL.String(), lb.Name)
 	return nil
 }
