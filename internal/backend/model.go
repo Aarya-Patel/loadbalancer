@@ -7,7 +7,7 @@ import (
 )
 
 /* Types */
-//go:generate stringer -type=Status -output=status_string.go
+//go:generate stringer -type=Status -output=statusstring.go
 type Status uint8
 
 /* Enums */

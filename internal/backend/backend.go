@@ -33,21 +33,21 @@ func InitBackends(backends []*Backend) {
 		server := bknd.Server
 		log.Print("Starting backend on ", bknd.URL.String())
 		go server.ListenAndServe()
-		updateBackendStatus(bknd, Healthy)
+		bknd.UpdateBackendStatus(Healthy)
 	}
 }
 
 func (bknd *Backend) IsHealthy() bool {
-	return bknd.Status.String() == "Healthy"
+	return bknd.Status.String() == Healthy.String()
 }
 
-func updateBackendStatus(backend *Backend, newStatus Status) {
+func (bknd *Backend) UpdateBackendStatus(newStatus Status) {
 	log.Printf("Backend on %s changed status from %s -> %s",
-		backend.URL.String(),
-		backend.Status.String(),
+		bknd.URL.String(),
+		bknd.Status.String(),
 		newStatus.String(),
 	)
-	backend.Status = newStatus
+	bknd.Status = newStatus
 }
 
 func generateBackendHandler(url *url.URL) func(http.ResponseWriter, *http.Request) {
