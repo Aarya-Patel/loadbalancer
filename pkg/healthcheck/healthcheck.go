@@ -75,9 +75,7 @@ func (hc *HealthCheck) PingBackends() {
 		for {
 			select {
 			case status := <-(doneChannels[idx]):
-				if bknd.Status != status {
-					bknd.UpdateBackendStatus(status)
-				}
+				bknd.UpdateBackendStatus(status)
 				break waitForPingBackend
 			}
 		}

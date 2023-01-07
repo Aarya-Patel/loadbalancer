@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
 )
 
 func New(serverUrl string) (*Backend, error) {
@@ -22,6 +23,7 @@ func New(serverUrl string) (*Backend, error) {
 			Handler: http.HandlerFunc(generateBackendHandler(targetURL)),
 		},
 		Status:       Initial,
+		Mux:          sync.Mutex{},
 		ReverseProxy: httputil.NewSingleHostReverseProxy(targetURL),
 	}
 
@@ -38,16 +40,23 @@ func InitBackends(backends []*Backend) {
 }
 
 func (bknd *Backend) IsHealthy() bool {
+	bknd.Mux.Lock()
+	defer bknd.Mux.Unlock()
 	return bknd.Status.String() == Healthy.String()
 }
 
 func (bknd *Backend) UpdateBackendStatus(newStatus Status) {
-	log.Printf("Backend on %s changed status from %s -> %s",
-		bknd.URL.String(),
-		bknd.Status.String(),
-		newStatus.String(),
-	)
-	bknd.Status = newStatus
+	bknd.Mux.Lock()
+	defer bknd.Mux.Unlock()
+
+	if bknd.Status.String() != newStatus.String() {
+		log.Printf("Backend on %s changed status from %s -> %s",
+			bknd.URL.String(),
+			bknd.Status.String(),
+			newStatus.String(),
+		)
+		bknd.Status = newStatus
+	}
 }
 
 func generateBackendHandler(url *url.URL) func(http.ResponseWriter, *http.Request) {

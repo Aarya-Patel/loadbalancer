@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
 )
 
 /* Types */
@@ -22,6 +23,7 @@ type Backend struct {
 	URL    *url.URL
 	Server *http.Server
 	Status Status
+	Mux    sync.Mutex
 
 	// ReverseProxy which forwards requests to `Server`
 	ReverseProxy *httputil.ReverseProxy
