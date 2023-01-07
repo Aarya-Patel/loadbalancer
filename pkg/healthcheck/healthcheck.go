@@ -8,6 +8,14 @@ import (
 	"github.com/Aarya-Patel/loadbalancer/internal/backend"
 )
 
+type Option func(*HealthCheck)
+
+type HealthCheck struct {
+	Backends []*backend.Backend
+	Timeout  time.Duration
+	Interval time.Duration
+}
+
 func New(options ...Option) (*HealthCheck, error) {
 	hc := HealthCheck{
 		Backends: []*backend.Backend{},
@@ -39,12 +47,27 @@ func WithBackends(bknds []*backend.Backend) Option {
 	}
 }
 
+func (hc *HealthCheck) StartHealthChecks() {
+	ticker := time.NewTicker(hc.Interval)
+
+	go func(ticker *time.Ticker) {
+		log.Printf("Starting healthcheck at an interval of %s", hc.Interval.String())
+		for {
+			select {
+			case <-ticker.C:
+				hc.PingBackends()
+			}
+		}
+	}(ticker)
+}
+
 func (hc *HealthCheck) PingBackends() {
 	doneChannels := make([]chan backend.Status, len(hc.Backends))
 	for idx := range doneChannels {
 		doneChannels[idx] = make(chan backend.Status)
 	}
 
+	log.Printf("Healthcheck pinging backends")
 	for idx, bknd := range hc.Backends {
 		go hc.pingBackend(bknd, &doneChannels[idx])
 
@@ -52,7 +75,6 @@ func (hc *HealthCheck) PingBackends() {
 		for {
 			select {
 			case status := <-(doneChannels[idx]):
-				log.Printf("Ping to %s returned with backend status of %s", bknd.URL.Host, status.String())
 				if bknd.Status != status {
 					bknd.UpdateBackendStatus(status)
 				}

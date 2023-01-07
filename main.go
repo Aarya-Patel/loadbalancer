@@ -16,8 +16,8 @@ var (
 		"http://localhost:8001",
 		"http://localhost:8002",
 	}
-	hcTimeout  = 1e9
-	hcInterval = 3e9
+	hcTimeout  = 1 * time.Second
+	hcInterval = 5 * time.Second
 )
 
 func main() {
@@ -44,6 +44,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go hc.PingBackends()
+	hc.StartHealthChecks()
 	rrlb.InitLoadBalancer()
 }
