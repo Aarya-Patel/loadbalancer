@@ -9,10 +9,9 @@ import (
 )
 
 type RoundRobinLoadBalancer struct {
-	*abstractLoadBalancer
-	// Maintain a consistent order of server URL.String()'s
-	ServerURLs []string
-	index      int
+	abstractLoadBalancer
+
+	index int
 }
 
 func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBalancer, error) {
@@ -23,8 +22,7 @@ func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBa
 
 	lb := RoundRobinLoadBalancer{
 		index:                0,
-		ServerURLs:           []string{},
-		abstractLoadBalancer: nil,
+		abstractLoadBalancer: abstractLoadBalancer{},
 	}
 
 	abstractLB := abstractLoadBalancer{
@@ -34,11 +32,12 @@ func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBa
 			Addr:    targetURL.Host,
 			Handler: http.HandlerFunc(lb.GenerateLBServeHTTP()),
 		},
-		Mapping: make(map[string]*backend.Backend),
+		ServerURLs: []string{},
+		Mapping:    make(map[string]*backend.Backend),
 	}
 
 	// Set the abstractLB after we GenerateLBServeHTTP
-	lb.abstractLoadBalancer = &abstractLB
+	lb.abstractLoadBalancer = abstractLB
 
 	return &lb, nil
 }
@@ -63,19 +62,4 @@ func (lb *RoundRobinLoadBalancer) GenerateLBServeHTTP() func(http.ResponseWriter
 		}
 		io.WriteString(rw, "There are no healthy backends available to process your request!")
 	}
-}
-
-func (lb *RoundRobinLoadBalancer) InsertBackend(serverURL string) error {
-	err := lb.abstractLoadBalancer.InsertBackend(serverURL)
-	if err != nil {
-		return err
-	}
-
-	targetURL, err := url.Parse(serverURL)
-	if err != nil {
-		return err
-	}
-
-	lb.ServerURLs = append(lb.ServerURLs, targetURL.String())
-	return nil
 }

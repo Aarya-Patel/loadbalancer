@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync"
+	"time"
 )
 
 func New(serverUrl string) (*Backend, error) {
@@ -61,6 +63,8 @@ func (bknd *Backend) UpdateBackendStatus(newStatus Status) {
 
 func generateBackendHandler(url *url.URL) func(http.ResponseWriter, *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
+		rand.Seed(time.Now().UnixNano())
+		time.Sleep(time.Duration(time.Duration(rand.Float32() * 1.05 * float32(time.Second))))
 		io.WriteString(res, fmt.Sprintf("Hello from %s", url.Host))
 	}
 }

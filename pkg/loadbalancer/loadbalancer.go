@@ -19,11 +19,21 @@ type abstractLoadBalancer struct {
 	URL    *url.URL
 	Server *http.Server
 
+	// Maintain a consistent order of server URL.String()'s
+	ServerURLs []string
+
 	// Mapping between URL.String() -> Backend
 	Mapping map[string]*backend.Backend
 }
 
 func (lb *abstractLoadBalancer) InsertBackend(serverURL string) error {
+	targetURL, err := url.Parse(serverURL)
+	if err != nil {
+		return err
+	}
+
+	lb.ServerURLs = append(lb.ServerURLs, targetURL.String())
+
 	bknd, err := backend.New(serverURL)
 	if err != nil {
 		return err

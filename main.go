@@ -17,7 +17,7 @@ var (
 		"http://localhost:8002",
 	}
 	hcTimeout  = 1 * time.Second
-	hcInterval = 5 * time.Second
+	hcInterval = 2 * time.Second
 )
 
 func main() {
