@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/Aarya-Patel/loadbalancer/internal/backend"
 )
@@ -12,6 +13,7 @@ type RoundRobinLoadBalancer struct {
 	abstractLoadBalancer
 
 	index int
+	mux   sync.Mutex
 }
 
 func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBalancer, error) {
@@ -22,6 +24,7 @@ func NewRoundRobinLoadBalancer(name string, serverURL string) (*RoundRobinLoadBa
 
 	lb := RoundRobinLoadBalancer{
 		index:                0,
+		mux:                  sync.Mutex{},
 		abstractLoadBalancer: abstractLoadBalancer{},
 	}
 
@@ -48,6 +51,9 @@ func (lb *RoundRobinLoadBalancer) GenerateLBServeHTTP() func(http.ResponseWriter
 			io.WriteString(rw, "There are no backends available to process your request!")
 			return
 		}
+
+		lb.mux.Lock()
+		defer lb.mux.Unlock()
 
 		wrapAroundIndex := lb.index + len(lb.ServerURLs)
 		for ; lb.index < wrapAroundIndex; lb.index++ {

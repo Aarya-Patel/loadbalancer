@@ -22,12 +22,17 @@ var (
 
 func main() {
 	rrlb, err := loadbalancer.NewRoundRobinLoadBalancer("rrlb", lbURL)
+	// rrlb, err := loadbalancer.NewWeightedRoundRobinLoadBalancer("wrrlb", lbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, host := range hosts {
-		rrlb.InsertBackend(host)
+		err := rrlb.InsertBackend(host)
+		// err := rrlb.InsertBackend(host, uint(i+1))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	allBackends := []*backend.Backend{}
