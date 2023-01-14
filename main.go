@@ -21,7 +21,8 @@ var (
 )
 
 func main() {
-	rrlb, err := loadbalancer.NewRoundRobinLoadBalancer("rrlb", lbURL)
+	// rrlb, err := loadbalancer.NewRoundRobinLoadBalancer("rrlb", lbURL)
+	rrlb, err := loadbalancer.NewRandomizedLoadBalancer("rrlb", lbURL)
 	// rrlb, err := loadbalancer.NewWeightedRoundRobinLoadBalancer("wrrlb", lbURL)
 	if err != nil {
 		log.Fatal(err)
